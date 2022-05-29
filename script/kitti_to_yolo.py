@@ -44,7 +44,11 @@ class KITTI2YOLO:
                     
                     xmin, ymin, xmax, ymax = parse_line['bbox_camera']
                     xcenter = ((xmax - xmin)/2 + xmin) / self.img_width
+                    if xcenter > 1.0:
+                        xcenter = 1.0
                     ycenter = ((ymax - ymin)/2 + ymin) / self.img_height
+                    if ycenter > 1.0:
+                        ycenter = 1.0
                     width = (xmax - xmin) / self.img_width
                     if width > 1.0:
                         width = 1.0
