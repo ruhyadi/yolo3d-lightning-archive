@@ -15,6 +15,7 @@ class KITTIDataModule(LightningDataModule):
         train_sets: str = '../data/KITTI/training/train.txt',
         val_sets: str = '../data/KITTI/training/val.txt',
         batch_size: int = 32,
+        num_worker: int = 4,
     ):
         super().__init__()
 
@@ -38,6 +39,7 @@ class KITTIDataModule(LightningDataModule):
         return DataLoader(
             dataset=self.KITTI_train,
             batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_worker,
             shuffle=True
         )
     
@@ -45,5 +47,6 @@ class KITTIDataModule(LightningDataModule):
         return DataLoader(
             dataset=self.KITTI_val,
             batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_worker,
             shuffle=False
         )

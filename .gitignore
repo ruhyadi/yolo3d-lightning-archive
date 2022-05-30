@@ -133,3 +133,4 @@ script/notebook.ipynb
 # folder
 /YOLO3D
 /lightning-hydra-template
+regressor/src/models/kitti_module.py

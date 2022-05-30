@@ -1,7 +1,8 @@
-_target_: src.models.regressor.Model
+_target_: src.models.regressor.RegressorModel
 
-model_select: 'resnet18'
+backbone: 'vgg11'
+lr: 0.001
+momentum: 0.9
 bins: 2
 w: 0.4
-lr: 0.001
 alpha: 0.6
