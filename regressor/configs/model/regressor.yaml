@@ -1,0 +1,7 @@
+_target_: src.models.regressor.Model
+
+model_select: 'resnet18'
+bins: 2
+w: 0.4
+lr: 0.001
+alpha: 0.6

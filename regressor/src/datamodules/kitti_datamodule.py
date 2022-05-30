@@ -1,114 +1,113 @@
-"""
-Script for Dataset Utilities
-"""
-
 import os
-import sys
 from pathlib import Path
 
-import numpy as np
 import cv2
-
+import numpy as np
+from torch.utils.data import Dataset
 from torchvision import transforms
-from torch.utils import data
 
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
+from src.utils import Calib as calib
+from src.utils.ClassAverages import ClassAverages
 
-import pytorch_lightning as pl
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import DataLoader, Dataset
+from torchvision.transforms import transforms
 
-# library
-from utils.Calib import get_P
-from utils.ClassAverages import ClassAverages
-
-FILE = Path(__file__).resolve()
-ROOT = FILE.parents[0]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
-
-def generate_bins(bins):
-    angle_bins = np.zeros(bins)
-    interval = 2 * np.pi / bins
-    for i in range(1, bins):
-        angle_bins[i] = i * interval
-    angle_bins += interval / 2 # center of bins
-
-    return angle_bins
-
-class KITTIDataModule(pl.LightningDataModule):
+class KITTIDataModule(LightningDataModule):
     def __init__(
         self,
-        dataset_path='../../data/KITTI/training',
-        batch_size=32,
-        num_workers=2,
-        val_split=0.1
-        ):
-        super(KITTIDataModule, self).__init__()
-        self.dataset_path = dataset_path
-        self.val_split = val_split
-        self.train_split = 1.0 - self.val_split
-        self.params = {'batch_size': batch_size, 'shuffle': True, 'num_workers': num_workers}
+        dataset_path: str = '../data/KITTI/training',
+        train_sets: str = '../data/KITTI/training/train.txt',
+        val_sets: str = '../data/KITTI/training/val.txt',
+        batch_size: int = 32,
+    ):
+        super().__init__()
+
+        # save hyperparameters
+        self.save_hyperparameters(logger=False)
+
+        # transforms
+        # TODO: using albumentations
+        self.dataset_transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
 
     def setup(self, stage=None):
-        """
-        Split dataset to training dan validation
-        """
-        self.KITTI = Dataset(path=self.dataset_path)
-        self.dataset_size = len(self.KITTI)
-        self.train_size = round(self.train_split * self.dataset_size)
-        self.val_size = self.dataset_size - self.train_size
-        self.KITTI_train, self.KITTI_val = random_split(self.KITTI, [self.train_size, self.val_size])
+        """ Split dataset to training and validation """
+        self.KITTI_train = KITTIDataset(self.hparams.dataset_path, self.hparams.train_sets)
+        self.KITTI_val = KITTIDataset(self.hparams.dataset_path, self.hparams.val_sets)
+        # TODO: add test datasets dan test sets
 
     def train_dataloader(self):
-        train_loader = DataLoader(self.KITTI_train, **self.params)          
-        return train_loader
-
+        return DataLoader(
+            dataset=self.KITTI_train,
+            batch_size=self.hparams.batch_size,
+            shuffle=True
+        )
+    
     def val_dataloader(self):
-        val_loader = DataLoader(self.KITTI_val, batch_size=self.params['batch_size'], shuffle=False, num_workers=self.params['num_workers'])
-        return val_loader
+        return DataLoader(
+            dataset=self.KITTI_val,
+            batch_size=self.hparams.batch_size,
+            shuffle=False
+        )
 
 
-class Dataset(data.Dataset):
-    def __init__(self, path, bins=2, overlap=0.1):
-        # dataset directory
-        self.top_img_path = path + '/images/'
-        self.top_label_path = path + '/label_2/'
-        self.top_calib_path = path + '/calib/'
+class KITTIDataset(Dataset):
+    def __init__(
+        self,
+        dataset_path: str = '../data/KITTI/training',
+        dataset_sets: str = '../data/KITTI/training/train.txt', # [train.txt, val.txt]
+        bins: int = 2,
+        overlap: float = 0.1,
+    ):
+        super().__init__()
 
-        # calibration file
-        # using global calib file
-        self.global_calib = path + '/calib_kitti.txt'
+        # dataset path
+        dataset_path = Path(dataset_path)
+        self.image_path = dataset_path / "images"  # image_2
+        self.label_path = dataset_path / "label_2"
+        self.calib_path = dataset_path / "calib"
+        self.global_calib = dataset_path / "calib_kitti.txt"
+        self.dataset_sets = Path(dataset_sets)
 
-        self.proj_matrix = get_P(self.global_calib)
+        # set projection matrix
+        self.proj_matrix = calib.get_P(self.global_calib)
 
-        # get index of image_2 files
-        self.ids = [x.split('.')[0] for x in sorted(os.listdir(self.top_calib_path))]
+        # index from images_path
+        self.sets = open(self.dataset_sets, 'r')
+        self.ids = [id.split('\n')[0] for id in self.sets.readlines()]
+        # self.ids = [x.split(".")[0] for x in sorted(os.listdir(self.image_path))]
+        
         self.num_images = len(self.ids)
 
-        # implement Multibins method
+        # set ANGLE BINS
         self.bins = bins
-        self.angle_bins = generate_bins(self.bins)
-        self.interval = 2 * np.pi / bins
+        self.angle_bins = self.generate_bins(self.bins)
+        self.interval = 2 * np.pi / self.bins
         self.overlap = overlap
 
         # ranges for confidence
         # [(min angle in bin, max angle in bin), ... ]
         self.bin_ranges = []
-        for i in range(0,bins):
-            self.bin_ranges.append(( (i*self.interval - overlap) % (2*np.pi), \
-                                (i*self.interval + self.interval + overlap) % (2*np.pi)) )
+        for i in range(0, bins):
+            self.bin_ranges.append(
+                (
+                    (i * self.interval - overlap) % (2 * np.pi),
+                    (i * self.interval + self.interval + overlap) % (2 * np.pi),
+                )
+            )
 
-        # hold average dimensions
-        # for counting num classes in dataset
-        class_list = ['Car', 'Van', 'Truck', 'Pedestrian','Person_sitting', 'Cyclist', 'Tram', 'Misc']
-        self.averages = ClassAverages(class_list)
+        # AVERANGE num classes dataset
+        # class_list same as in detector
+        self.class_list = ["Car", "Pedestrian", "Cyclist", "Truck"]
+        self.averages = ClassAverages(self.class_list)
 
         # list of object [id (000001), line_num]
         self.object_list = self.get_objects(self.ids)
 
-        # label
-        # contain image label params {bbox, dimension, etc}
+        # label: contain image label params {bbox, dimension, etc}
         self.labels = {}
         last_id = ""
         for obj in self.object_list:
@@ -119,12 +118,11 @@ class Dataset(data.Dataset):
                 self.labels[id] = {}
                 last_id = id
             self.labels[id][str(line_num)] = label
-        
+
         # current id and image
-        # one image at a time
         self.curr_id = ""
         self.curr_img = None
-    
+
     def __getitem__(self, index):
         id = self.object_list[index][0]
         line_num = self.object_list[index][1]
@@ -132,31 +130,47 @@ class Dataset(data.Dataset):
         if id != self.curr_id:
             self.curr_id = id
             # read image (.png)
-            self.curr_img = cv2.imread(self.top_img_path + f'{id}.png')
+            self.curr_img = cv2.imread(str(self.image_path / f"{id}.png"))
 
         label = self.labels[id][str(line_num)]
 
-        obj = DetectedObject(self.curr_img, label['Class'], label['Box_2D'], self.proj_matrix, label=label)
+        obj = DetectedObject(
+            self.curr_img, label["Class"], label["Box_2D"], self.proj_matrix, label=label
+        )
 
         return obj.img, label
 
     def __len__(self):
         return len(self.object_list)
 
+    # def generate_sets(self, sets_file):
+    #     with open(self.dataset_sets) as file:
+    #         for line_num, line in enumerate(file):
+    #             ids = line
+
+    def generate_bins(self, bins):
+        angle_bins = np.zeros(bins)
+        interval = 2 * np.pi / bins
+        for i in range(1, bins):
+            angle_bins[i] = i * interval
+        angle_bins += interval / 2  # center of bins
+
+        return angle_bins
+
     def get_objects(self, ids):
-        """
-        Get objects parameter from labels, like dimension and class name
-        """
+        """Get objects parameter from labels, like dimension and class name."""
         objects = []
         for id in ids:
-            with open(self.top_label_path + f'{id}.txt') as file:
+            with open(self.label_path / f"{id}.txt") as file:
                 for line_num, line in enumerate(file):
-                    line = line[:-1].split(' ')
+                    line = line[:-1].split(" ")
                     obj_class = line[0]
-                    if obj_class == "DontCare":
+                    if obj_class not in self.class_list:
                         continue
 
-                    dimension =  np.array([float(line[8]), float(line[9]), float(line[10])], dtype=np.double)
+                    dimension = np.array(
+                        [float(line[8]), float(line[9]), float(line[10])], dtype=np.double
+                    )
                     self.averages.add_item(obj_class, dimension)
 
                     objects.append((id, line_num))
@@ -165,7 +179,7 @@ class Dataset(data.Dataset):
         return objects
 
     def get_label(self, id, line_num):
-        lines = open(self.top_label_path + f'{id}.txt').read().splitlines()
+        lines = open(self.label_path / f"{id}.txt").read().splitlines()
         label = self.format_label(lines[line_num])
 
         return label
@@ -175,8 +189,8 @@ class Dataset(data.Dataset):
         bin_idxs = []
 
         def is_between(min, max, angle):
-            max = (max - min) if (max - min) > 0 else (max - min) + 2*np.pi
-            angle = (angle - min) if (angle - min) > 0 else (angle - min) + 2*np.pi
+            max = (max - min) if (max - min) > 0 else (max - min) + 2 * np.pi
+            angle = (angle - min) if (angle - min) > 0 else (angle - min) + 2 * np.pi
             return angle < max
 
         for bin_idx, bin_range in enumerate(self.bin_ranges):
@@ -184,10 +198,10 @@ class Dataset(data.Dataset):
                 bin_idxs.append(bin_idx)
 
         return bin_idxs
-            
+
     def format_label(self, line):
-        line = line[:-1].split(' ')
-        
+        line = line[:-1].split(" ")
+
         Class = line[0]
 
         for i in range(1, len(line)):
@@ -209,7 +223,7 @@ class Dataset(data.Dataset):
         # Locattion: x, y, z
         Location = [line[11], line[12], line[13]]
         # bring the KITTI center up to the middle of the object
-        Location[1] -= Dimension[0]/2
+        Location[1] -= Dimension[0] / 2
 
         Orientation = np.zeros((self.bins, 2))
         Confidence = np.zeros(self.bins)
@@ -222,30 +236,29 @@ class Dataset(data.Dataset):
         for bin_idx in bin_idxs:
             angle_diff = angle - self.angle_bins[bin_idx]
 
-            Orientation[bin_idx,:] = np.array([np.cos(angle_diff), np.sin(angle_diff)])
+            Orientation[bin_idx, :] = np.array([np.cos(angle_diff), np.sin(angle_diff)])
             Confidence[bin_idx] = 1
 
         label = {
-            'Class': Class,
-            'Box_2D': Box_2D,
-            'Dimensions': Dimension,
-            'Alpha': Alpha,
-            'Orientation': Orientation,
-            'Confidence': Confidence
+            "Class": Class,
+            "Box_2D": Box_2D,
+            "Dimensions": Dimension,
+            "Alpha": Alpha,
+            "Orientation": Orientation,
+            "Confidence": Confidence,
         }
 
         return label
 
 
 class DetectedObject:
-    """
-    Processing image for NN input
-    """
+    """Processing image for NN input."""
+
     def __init__(self, img, detection_class, box_2d, proj_matrix, label=None):
 
         # check if proj_matrix is path
         if isinstance(proj_matrix, str):
-            proj_matrix = get_P(proj_matrix)
+            proj_matrix = calib.get_P(proj_matrix)
 
         self.proj_matrix = proj_matrix
         self.theta_ray = self.calc_theta_ray(img, box_2d, proj_matrix)
@@ -254,50 +267,34 @@ class DetectedObject:
         self.detection_class = detection_class
 
     def calc_theta_ray(self, img, box_2d, proj_matrix):
-        """
-        Calculate global angle of object, see paper
-        """
+        """Calculate global angle of object, see paper."""
         width = img.shape[1]
         # Angle of View: fovx (rad) => 3.14
         fovx = 2 * np.arctan(width / (2 * proj_matrix[0][0]))
         center = (box_2d[1][0] + box_2d[0][0]) / 2
-        dx = center - (width/2)
+        dx = center - (width / 2)
 
         mult = 1
         if dx < 0:
             mult = -1
         dx = abs(dx)
-        angle = np.arctan((2*dx*np.tan(fovx/2)) / width)
+        angle = np.arctan((2 * dx * np.tan(fovx / 2)) / width)
         angle = angle * mult
 
         return angle
 
     def format_img(self, img, box_2d):
         # transforms
-        normalize = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225])
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         process = transforms.Compose([transforms.ToTensor(), normalize])
 
         # crop image
         pt1, pt2 = box_2d[0], box_2d[1]
-        crop = img[pt1[1]:pt2[1]+1, pt1[0]:pt2[0]+1]
+        crop = img[pt1[1] : pt2[1] + 1, pt1[0] : pt2[0] + 1]
         crop = cv2.resize(crop, (224, 224), interpolation=cv2.INTER_CUBIC)
 
         # apply transform for batch
         batch = process(crop)
 
         return batch
-
-
-if __name__ == '__main__':
-
-    KITTIDataset = KITTIDataModule(batch_size=1)
-    KITTIDataset.setup()
-
-    train_loader = KITTIDataset.train_dataloader()
-
-    for i in train_loader:
-        print(i)
-        break
