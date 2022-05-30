@@ -11,12 +11,12 @@ class RegressorModel(LightningModule):
     def __init__(
         self,
         backbone: str,
-        lr: float = 0.001,
+        lr: float = 0.0001,
         momentum: float = 0.9,
         bins: int = 2,
         w: float = 0.4,
-        alpha: float = 0.6,
-        ):
+        alpha: float = 0.6
+    ):
         super().__init__()
 
         # save hyperparamters
@@ -37,6 +37,8 @@ class RegressorModel(LightningModule):
         optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr, 
             momentum=self.hparams.momentum
         )
+        
+        return optimizer
 
     def step(self, batch):
         x, y = batch
