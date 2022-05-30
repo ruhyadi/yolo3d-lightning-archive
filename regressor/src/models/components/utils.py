@@ -15,8 +15,7 @@ class RegressorNet(nn.Module):
         super().__init__()
 
         # init model
-        self.backbone = backbone
-        self.model, self.in_features = get_model(self.backbone)
+        self.model, self.in_features = get_model(backbone)
         self.bins = bins
 
         # orientation head, for orientation estimation
