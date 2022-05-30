@@ -146,3 +146,6 @@ logs/
 wandb/
 .env
 .autoenv
+
+# ignore in regressor
+class_averages.txt
