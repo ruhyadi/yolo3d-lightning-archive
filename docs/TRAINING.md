@@ -21,3 +21,30 @@ python -m torch.distributed.launch \
     --weights yolov5s.pt \
     --device 0,1,2,3
 ```
+
+## Regressor
+Muiltiple GPU
+```bash
+python train.py \
+    trainer.gpus=4 \
+    +trainer.strategy=ddp
+```
+
+#### Debugging
+Train with 5% of data
+```bash
+python train.py \
+    +trainer.limit_train_batches=0.05 \
+    +trainer.limit_val_batches=0.05
+```
+
+Multiple GPU
+```bash
+python -m torch.distributed.launch \
+    --nproc_per_node 2 \
+    train.py \
+        --batch 64 \
+        --data coco.yaml \
+        --weights yolov5s.pt \
+        --device 0,1
+```

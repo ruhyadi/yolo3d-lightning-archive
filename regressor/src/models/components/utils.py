@@ -9,13 +9,17 @@ from torchvision import models
 class RegressorNet(nn.Module):
     def __init__(
         self,
-        backbone: str,
+        backbone: nn.Module,
         bins: int,
     ):
         super().__init__()
 
         # init model
-        self.model, self.in_features = get_model(backbone)
+        self.backbone = backbone
+        self.in_features = self._get_in_features(self.backbone)
+        print(self.in_features)
+        self.model = nn.Sequential(*(list(self.backbone.children())[:-2]))
+        
         self.bins = bins
 
         # orientation head, for orientation estimation
@@ -65,6 +69,17 @@ class RegressorNet(nn.Module):
 
         return orientation, confidence, dimension
 
+    def _get_in_features(self, net: nn.Module):
+
+        # TODO: add more models
+        in_features = {
+            'resnet': (lambda: net.fc.in_features * 7 * 7),
+            'vgg': (lambda: net.classifier[0].in_features)
+        }
+        
+        return in_features[(net.__class__.__name__).lower()]()
+
+
 def OrientationLoss(orient_batch, orientGT_batch, confGT_batch):
     """
     Orientation loss function
@@ -80,6 +95,8 @@ def OrientationLoss(orient_batch, orientGT_batch, confGT_batch):
     estimated_theta_diff = torch.atan2(orient_batch[:,1], orient_batch[:,0])
 
     return -1 * torch.cos(theta_diff - estimated_theta_diff).mean()
+
+
 
 def get_model(backbone: str):
     """

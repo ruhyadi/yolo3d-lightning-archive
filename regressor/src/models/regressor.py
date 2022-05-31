@@ -5,15 +5,14 @@ import torch
 from torch import nn
 from pytorch_lightning import LightningModule
 
-from src.models.components.utils import RegressorNet, OrientationLoss
+from src.models.components.utils import OrientationLoss
 
 class RegressorModel(LightningModule):
     def __init__(
         self,
-        backbone: str,
+        net: nn.Module,
         lr: float = 0.0001,
         momentum: float = 0.9,
-        bins: int = 2,
         w: float = 0.4,
         alpha: float = 0.6
     ):
@@ -23,7 +22,7 @@ class RegressorModel(LightningModule):
         self.save_hyperparameters(logger=False)
 
         # init model
-        self.net = RegressorNet(self.hparams.backbone, self.hparams.bins)
+        self.net = net
 
         # loss functions
         self.conf_loss_func = nn.CrossEntropyLoss()
