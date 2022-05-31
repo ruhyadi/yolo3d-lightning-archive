@@ -67,11 +67,11 @@ class RegressorModel(LightningModule):
 
         # logging
         self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        return {'loss': loss}
+        return {'loss': loss, 'preds': preds, 'targets': targets}
 
     def validation_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
 
         # logging
         self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        return {'loss': loss}
+        return {'loss': loss, 'preds': preds, 'targets': targets}

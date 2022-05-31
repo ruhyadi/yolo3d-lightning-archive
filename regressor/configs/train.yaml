@@ -5,8 +5,8 @@ defaults:
   - _self_
   - datamodule: kitti_datamodule.yaml
   - model: regressor.yaml
-  - callbacks: default.yaml
-  - logger: null # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
+  - callbacks: wandb.yaml
+  - logger: wandb.yaml # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   - trainer: default.yaml
   - log_dir: default.yaml
 

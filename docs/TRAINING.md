@@ -35,7 +35,8 @@ Train with 5% of data
 ```bash
 python train.py \
     +trainer.limit_train_batches=0.05 \
-    +trainer.limit_val_batches=0.05
+    +trainer.limit_val_batches=0.05 \
+    name=test5%-data
 ```
 
 Multiple GPU
