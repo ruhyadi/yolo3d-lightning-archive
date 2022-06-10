@@ -26,8 +26,10 @@ python -m torch.distributed.launch \
 Muiltiple GPU
 ```bash
 python train.py \
-    trainer.gpus=4 \
-    +trainer.strategy=ddp
+    trainer.gpus=[1,2,3] \
+    trainer.max_epochs=20 \
+    +trainer.strategy=ddp \
+    name="20 Epochs"
 ```
 
 #### Debugging
