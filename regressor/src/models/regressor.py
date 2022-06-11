@@ -32,12 +32,11 @@ class RegressorModel(LightningModule):
     def forward(self, x):
         return self.net(x)
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr, 
-            momentum=self.hparams.momentum
-        )
-        
-        return optimizer
+    def on_train_start(self):
+        # by default lightning executes validation step sanity checks before training starts,
+        # so we need to make sure val_acc_best doesn't store accuracy from these checks
+        # self.val_acc_best.reset()
+        pass
 
     def step(self, batch):
         x, y = batch
@@ -60,18 +59,40 @@ class RegressorModel(LightningModule):
         loss_theta = conf_loss + self.hparams.w * orient_loss
         loss = self.hparams.alpha * dim_loss + loss_theta
 
-        return loss, preds, y
+        return [loss, loss_theta, orient_loss, dim_loss, conf_loss], preds, y
 
     def training_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
 
         # logging
-        self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True)
-        return {'loss': loss}
+        self.log_dict({'train/loss': loss[0], 'train/theta_loss': loss[1],
+                        'train/orient_loss': loss[2], 'train/dim_loss': loss[3],
+                        'train/conf_loss': loss[4]}, on_step=False, on_epoch=True, prog_bar=False)
+        return {'loss': loss[0], 'preds': preds, 'targets': targets}
+
+    def training_epoch_end(self, outputs):
+        # `outputs` is a list of dicts returned from `training_step()`
+        pass
 
     def validation_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
 
         # logging
-        self.log('val/loss', loss, on_step=False, on_epoch=True, prog_bar=True)
-        return {'loss': loss}
+        self.log_dict({'val/loss': loss[0], 'val/theta_loss': loss[1],
+                        'val/orient_loss': loss[2], 'val/dim_loss': loss[3],
+                        'val/conf_loss': loss[4]}, on_step=False, on_epoch=True, prog_bar=False)
+        return {'loss': loss[0], 'preds': preds, 'targets': targets}
+
+    def validation_epoch_end(self, outputs):
+        pass
+
+    def on_epoch_end(self):
+        # reset metrics at the end of every epoch
+        pass
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr, 
+            momentum=self.hparams.momentum
+        )
+        
+        return optimizer
