@@ -16,7 +16,7 @@ print_config: True
 ignore_warnings: True
 
 # checkpoint directory
-checkpoint_dir: ${hydra:runtime.cwd}/logs/experiments/runs/20 Epochs/2022-06-10_22-13-34/checkpoints/last.ckpt
+checkpoint_dir: ${hydra:runtime.cwd}/weights/epoch_022.ckpt
 
 # dump dir
 dump_dir: ${hydra:runtime.cwd}/weights
@@ -30,4 +30,4 @@ input_sample:
 convert_to: "pytorch" # [pytorch, torchscript, onnx, tensorrt]
 
 # model name without extension
-name: ${dump_dir}/regressor_20_epochs
+name: ${dump_dir}/regressor_001

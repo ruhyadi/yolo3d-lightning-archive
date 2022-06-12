@@ -155,4 +155,4 @@ class_averages.txt
 *.ckpt
 *.onnx
 /outputs
-/weights
+/artifacts

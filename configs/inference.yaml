@@ -1,0 +1,19 @@
+# @package _global_
+
+# specify here default training configuration
+defaults:
+  - _self_
+  - detector: yolov5.yaml
+  - model: regressor.yaml
+
+  # debugging config (enable through command line, e.g. `python train.py debug=default)
+  - debug: null
+
+  # enable color logging
+  - override hydra/hydra_logging: colorlog
+  - override hydra/job_logging: colorlog
+
+root: ${hydra:runtime.cwd}
+
+regressor_weights: ${root}/weights/regressor_001.pt
+
