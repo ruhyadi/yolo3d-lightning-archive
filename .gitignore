@@ -156,3 +156,7 @@ class_averages.txt
 *.onnx
 /outputs
 /artifacts
+/yolo3d
+/data/demo
+
+*.png

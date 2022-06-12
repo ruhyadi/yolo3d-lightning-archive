@@ -5,6 +5,7 @@ defaults:
   - _self_
   - detector: yolov5.yaml
   - model: regressor.yaml
+  - augmentation: inference_preprocessing.yaml
 
   # debugging config (enable through command line, e.g. `python train.py debug=default)
   - debug: null
@@ -13,7 +14,17 @@ defaults:
   - override hydra/hydra_logging: colorlog
   - override hydra/job_logging: colorlog
 
+# root directory
 root: ${hydra:runtime.cwd}
 
+# save 2D bounding box
+save_det2d: False
+
+# regressor weights
 regressor_weights: ${root}/weights/regressor_001.pt
 
+# source directory
+source_dir: ${root}/data/demo/images
+
+# dump directory
+dump_dir: ${root}/runs
