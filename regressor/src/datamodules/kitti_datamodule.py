@@ -50,3 +50,12 @@ class KITTIDataModule(LightningDataModule):
             num_workers=self.hparams.num_worker,
             shuffle=False
         )
+
+if __name__ == '__main__':
+
+    dataset = KITTIDataModule(batch_size=1)
+    train = dataset.train_dataloader()
+
+    for i in train:
+        print(i)
+        break

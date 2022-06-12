@@ -149,3 +149,10 @@ wandb/
 
 # ignore in regressor
 class_averages.txt
+
+# ignore model
+*.pt 
+*.ckpt
+*.onnx
+/outputs
+/weights

@@ -256,3 +256,14 @@ class DetectedObject:
         batch = process(crop)
 
         return batch
+
+if __name__ == '__main__':
+
+    from torch.utils.data import DataLoader
+
+    dataset = KITTIDataset()
+    train_loader = DataLoader(dataset, 1)
+
+    for img, label in train_loader:
+        print(img.shape)
+        break

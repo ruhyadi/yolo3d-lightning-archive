@@ -136,3 +136,9 @@ script/notebook.ipynb
 regressor/src/models/kitti_module.py
 /logs
 /outputs
+
+# Ignore
+
+*.pt
+*.pth
+*.onnx

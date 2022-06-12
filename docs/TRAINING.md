@@ -51,3 +51,10 @@ python -m torch.distributed.launch \
         --weights yolov5s.pt \
         --device 0,1
 ```
+
+Hyperparameters Search
+```bash
+python train.py -m \
+    hparams_search=regressor_optuna \
+    experiment=sample
+```
