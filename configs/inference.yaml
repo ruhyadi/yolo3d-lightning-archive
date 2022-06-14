@@ -17,6 +17,9 @@ defaults:
 # root directory
 root: ${hydra:runtime.cwd}
 
+# calib_file
+calib_file: ${root}/data/global_calib.txt
+
 # save 2D bounding box
 save_det2d: False
 
