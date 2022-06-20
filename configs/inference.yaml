@@ -23,6 +23,9 @@ calib_file: ${root}/data/global_calib.txt
 # save 2D bounding box
 save_det2d: False
 
+# show and save result
+save_result: True
+
 # regressor weights
 regressor_weights: ${root}/weights/regressor_001.pt
 
