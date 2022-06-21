@@ -219,3 +219,25 @@ def calc_theta_ray(img_width, box_2d, proj_matrix):
     angle = angle * mult
 
     return angle
+
+def calc_alpha(orient, conf, bins=2):
+    angle_bins = generate_bins(bins=bins)
+    
+    argmax = np.argmax(conf)
+    orient = orient[argmax, :]
+    cos = orient[0]
+    sin = orient[1]
+    alpha = np.arctan2(sin, cos)
+    alpha += angle_bins[argmax]
+    alpha -= np.pi
+
+    return alpha
+
+def generate_bins(bins):
+    angle_bins = np.zeros(bins)
+    interval = 2 * np.pi / bins
+    for i in range(1, bins):
+        angle_bins[i] = i * interval
+    angle_bins += interval / 2  # center of bins
+
+    return angle_bins
