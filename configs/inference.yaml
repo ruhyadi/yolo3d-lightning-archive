@@ -30,7 +30,11 @@ save_result: True
 regressor_weights: ${root}/weights/regressor_001.pt
 
 # source directory
-source_dir: ${root}/data/demo/images
+# source_dir: ${root}/data/demo/images
+source_dir: ${root}/data/demo/videos/2011_09_26/image_02/data
 
 # dump directory
 dump_dir: ${root}/runs
+
+# device to inference
+device: 'cuda:0'

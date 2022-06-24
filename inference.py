@@ -43,7 +43,7 @@ def inference(config: DictConfig):
     log.info(f"Instantiating regressor <{config.model._target_}>")
     regressor: LightningModule = hydra.utils.instantiate(config.model)
     regressor.load_state_dict(torch.load(config.get("regressor_weights")))
-    regressor.eval()
+    regressor.eval().to(config.get("device"))
 
     # init preprocessing
     log.info(f"Instantiating preprocessing")
@@ -59,37 +59,37 @@ def inference(config: DictConfig):
     for img_path in imgs_path:
         name = img_path.split("/")[-1].split(".")[0]
         img = Image.open(img_path)
-        img_draw = np.asarray(img)
+        img_draw = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
         # detect object with Detector
-        dets = detector(img).crop()
-
+        dets = detector(img).crop(save=False)
+        # TODO: remove DIMS
         DIMS = []
-
         for i, det in enumerate(dets):
             # preprocess img with torch.transforms
             crop = preprocess(cv2.resize(det["im"], (224, 224)))
             # batching img
-            crop = crop.reshape((1, *crop.shape))
+            crop = crop.reshape((1, *crop.shape)).to(config.get("device"))
             # regress 2D bbox
             [orient, conf, dim] = regressor(crop)
-            orient = orient.detach().numpy()[0, :, :]
-            conf = conf.detach().numpy()[0, :]
-            dim = dim.detach().numpy()[0, :]
+            orient = orient.cpu().detach().numpy()[0, :, :]
+            conf = conf.cpu().detach().numpy()[0, :]
+            dim = dim.cpu().detach().numpy()[0, :]
             # refinement dimension
             try:
-                dim += class_averages.get_item(class_to_labels(det["cls"].numpy()))
+                dim += class_averages.get_item(class_to_labels(det["cls"].cpu().numpy()))
                 DIMS.append(dim)
             except:
                 dim = DIMS[-1]
             # calculate orientation
-            theta_ray = calc_theta_ray(img.size[0], det["box"], proj_matrix)
+            box = [box.cpu().numpy() for box in det["box"]]
+            theta_ray = calc_theta_ray(img.size[0], box, proj_matrix)
             alpha = calc_alpha(orient=orient, conf=conf, bins=2)
             orient = alpha + theta_ray
             # calculate the location
             location, x = calc_location(
                 dimension=dim,
                 proj_matrix=proj_matrix,
-                box_2d=[x.numpy() for x in det["box"]],
+                box_2d=box,
                 alpha=alpha,
                 theta_ray=theta_ray,
             )
@@ -135,7 +135,8 @@ def detector_yolov5(model_path: str, cfg_path: str, classes: int, device: str):
 def class_to_labels(class_: int, list_labels: List = None):
 
     if list_labels is None:
-        list_labels = ["pedestrian", "car", "truck"]
+        # TODO: change some labels mistakes
+        list_labels = ['car', 'car', 'truck', 'pedestrian', 'cyclist']
 
     return list_labels[int(class_)]
 

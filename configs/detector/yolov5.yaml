@@ -1,6 +1,6 @@
 _target_: inference.detector_yolov5
 
-model_path: ${root}/weights/yolov5s.pt
+model_path: ${root}/weights/YOLO3D_20Epoch_best.pt
 cfg_path: ${root}/yolov5/models/yolov5s.yaml
-classes: 80
-device: 'cpu'
+classes: 5
+device: 'cuda:0'
