@@ -163,3 +163,5 @@ class_averages.txt
 notebooks/notebook.ipynb
 *.pkl
 /runs
+*.zip
+PRIVATE.md
