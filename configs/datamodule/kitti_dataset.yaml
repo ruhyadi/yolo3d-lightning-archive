@@ -1,0 +1,6 @@
+_target_: src.datamodules.components.kitti_dataset.KITTIDataset
+
+dataset_path: ${dataset_dir}
+dataset_sets: ${dataset_dir}/train.txt
+bins: 2
+overlap: 0.1

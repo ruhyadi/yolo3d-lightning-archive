@@ -256,3 +256,23 @@ class DetectedObject:
         batch = process(crop)
 
         return batch
+
+def generate_bins(bins):
+    angle_bins = np.zeros(bins)
+    interval = 2 * np.pi / bins
+    for i in range(1, bins):
+        angle_bins[i] = i * interval
+    angle_bins += interval / 2  # center of bins
+
+    return angle_bins
+
+if __name__ == '__main__':
+
+    from torch.utils.data import DataLoader
+
+    dataset = KITTIDataset()
+    train_loader = DataLoader(dataset, 1)
+
+    for img, label in train_loader:
+        print(img.shape)
+        break

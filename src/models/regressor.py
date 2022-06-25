@@ -19,7 +19,7 @@ class RegressorModel(LightningModule):
         super().__init__()
 
         # save hyperparamters
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False, ignore=['net'])
 
         # init model
         self.net = net
@@ -84,15 +84,21 @@ class RegressorModel(LightningModule):
         return {'loss': loss[0], 'preds': preds, 'targets': targets}
 
     def validation_epoch_end(self, outputs):
-        pass
+        avg_val_loss = torch.tensor([x['loss'] for x in outputs]).mean()
+        
+        # log to tensorboard
+        self.log('val/avg_loss', avg_val_loss)
+        return {'loss': avg_val_loss}
 
     def on_epoch_end(self):
         # reset metrics at the end of every epoch
         pass
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr, 
-            momentum=self.hparams.momentum
-        )
+        optimizer = torch.optim.Adam(params=self.parameters(), lr=self.hparams.lr)
+        # optimizer = torch.optim.SGD(self.parameters(), lr=self.hparams.lr, 
+        #     momentum=self.hparams.momentum
+        # )
+        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=5)
         
         return optimizer
