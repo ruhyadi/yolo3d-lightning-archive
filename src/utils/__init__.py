@@ -161,3 +161,10 @@ def finish(
             import wandb
 
             wandb.finish()
+
+        elif isinstance(lg, pl.loggers.mlflow.MLFlowLogger):
+            import mlflow
+            
+            # only save best model checkpoint
+            lg.experiment.log_artifact(lg.run_id, trainer.checkpoint_callback.best_model_path)
+            mlflow.end_run()
