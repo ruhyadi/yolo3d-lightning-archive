@@ -19,6 +19,8 @@ seed: 12345
 trainer:
   min_epochs: 1
   max_epochs: 1
+  limit_train_batches: 0.1
+  limit_val_batches: 0.1
   gpus: [0,1,2,3]
   strategy: ddp
 
