@@ -30,6 +30,9 @@ save_det2d: False
 # show and save result
 save_result: True
 
+# save result in txt
+save_txt: True
+
 # regressor weights
 regressor_weights: ${root}/weights/regressor_resnet18.pt
 

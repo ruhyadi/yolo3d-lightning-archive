@@ -67,6 +67,8 @@ def inference(config: DictConfig):
         dets = detector(img).crop(save=config.get("save_det2d"))
         # TODO: remove DIMS
         DIMS = []
+        # txt results
+        RESULTS_TXT = []
         for det in dets:
             # preprocess img with torch.transforms
             crop = preprocess(cv2.resize(det["im"], (224, 224)))
@@ -84,7 +86,7 @@ def inference(config: DictConfig):
             except:
                 dim = DIMS[-1]
             # calculate orientation
-            box = [box.cpu().numpy() for box in det["box"]]
+            box = [box.cpu().numpy() for box in det["box"]]  # xyxy
             theta_ray = calc_theta_ray(img.size[0], box, proj_matrix)
             alpha = calc_alpha(orient=orient, conf=conf, bins=2)
             orient = alpha + theta_ray
@@ -105,9 +107,31 @@ def inference(config: DictConfig):
                 center=location,
             )
 
+            if config.get("save_txt"):
+                # save txt results
+                results_txt = {
+                    "type": det["label"].split(" ")[0].capitalize(),
+                    "truncated": -1.00,
+                    "occluded": -1,
+                    "alpha": alpha,
+                    "bbox": " ".join(str(x) for x in box),
+                    "dimension": " ".join(map(str, dim)),
+                    "location": " ".join(str(x) for x in location),
+                    "rotation_y": orient,
+                    "score": str(det["conf"].cpu().numpy()),
+                }
+                # append as string
+                RESULTS_TXT.append(" ".join(str(v) for k, v in results_txt.items()))
+
         # save images
         if config.get("save_result"):
             cv2.imwrite(f'{config.get("output_dir")}/{name}.png', img_draw)
+
+        # save txt
+        if config.get("save_txt"):
+            with open(f'{config.get("output_dir")}/{name}.txt', "w") as f:
+                for i in range(len(RESULTS_TXT)):
+                    f.write(f"{RESULTS_TXT[i]}\n")
 
 
 def detector_yolov5(model_path: str, cfg_path: str, classes: int, device: str):
