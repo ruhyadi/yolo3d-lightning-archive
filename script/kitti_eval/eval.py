@@ -1,7 +1,7 @@
 import io as sysio
 import time
 
-import numba
+# import numba
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -14,7 +14,7 @@ def get_mAP(prec):
     return sums / 11 * 100
 
 
-@numba.jit
+# @numba.jit
 def get_thresholds(scores: np.ndarray, num_gt, num_sample_pts=41):
     scores.sort()
     scores = scores[::-1]
@@ -95,7 +95,7 @@ def clean_data(gt_anno, dt_anno, current_class, difficulty):
     return num_valid_gt, ignored_gt, ignored_dt, dc_bboxes
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def image_box_overlap(boxes, query_boxes, criterion=-1):
     N = boxes.shape[0]
     K = query_boxes.shape[0]
@@ -130,7 +130,7 @@ def bev_box_overlap(boxes, qboxes, criterion=-1):
     return riou
 
 
-@numba.jit(nopython=True, parallel=True)
+# @numba.jit(nopython=True, parallel=True)
 def d3_box_overlap_kernel(boxes,
                           qboxes,
                           rinc,
@@ -180,7 +180,7 @@ def d3_box_overlap(boxes, qboxes, criterion=-1, z_axis=1, z_center=1.0):
     return rinc
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def compute_statistics_jit(overlaps,
                            gt_datas,
                            dt_datas,
@@ -311,7 +311,7 @@ def get_split_parts(num, num_part):
         return [same_part] * num_part + [remain_num]
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def fused_compute_statistics(overlaps,
                              pr,
                              gt_nums,
@@ -364,7 +364,7 @@ def fused_compute_statistics(overlaps,
 def calculate_iou_partly(gt_annos,
                          dt_annos,
                          metric,
-                         num_parts=50,
+                         num_parts=1,
                          z_axis=1,
                          z_center=1.0):
     """fast iou algorithm. this function can be used independently to
@@ -487,7 +487,7 @@ def eval_class(gt_annos,
                   compute_aos=False,
                   z_axis=1,
                   z_center=1.0,
-                  num_parts=5):
+                  num_parts=1):
     """Kitti eval. support 2d/bev/3d/aos eval. support 0.5:0.05:0.95 coco AP.
     Args:
         gt_annos: dict, must from get_label_annos() in kitti_common.py

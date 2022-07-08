@@ -166,3 +166,4 @@ notebooks/notebook.ipynb
 *.zip
 PRIVATE.md
 script/kitti-object-eval-python2
+script/kitti_eval_c
