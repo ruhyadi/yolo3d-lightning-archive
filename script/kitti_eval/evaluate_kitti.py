@@ -2,20 +2,29 @@
 
 import kitti_common as kitti
 from eval import get_coco_eval_result, get_official_eval_result
+import argparse
+
+def evaluate(dt_path, gt_path, dt_sets):
+    """Evaluate KITTI 3D Object Detection"""
+    dt_annos = kitti.get_label_annos(dt_path)
+    val_image_ids = _read_imageset_file(dt_sets)
+    gt_annos = kitti.get_label_annos(gt_path, val_image_ids)
+
+    print(get_official_eval_result(gt_annos, dt_annos, 0))
+    print(get_coco_eval_result(gt_annos, dt_annos, 0))
 
 def _read_imageset_file(path):
     with open(path, 'r') as f:
         lines = f.readlines()
     return [int(line) for line in lines]
 
-det_path = "/raid/didir/Repository/yolo3d-lightning/data/KITTI/results_dummy"
-dt_annos = kitti.get_label_annos(det_path)
+if __name__ == "__main__":
+    # argparse
+    parser = argparse.ArgumentParser(description="Evaluate KITTI 3D Object Detection")
+    parser.add_argument("--dt_path", type=str, default="/raid/didir/Repository/yolo3d-lightning/outputs/2022-07-09/15-56-16/inference", help="Path to detection results")
+    parser.add_argument("--gt_path", type=str, default="/raid/didir/Repository/yolo3d-lightning/data/KITTI/label_2", help="Path to ground truth")
+    parser.add_argument("--dt_sets", type=str, default="/raid/didir/Repository/yolo3d-lightning/data/KITTI/eval.txt", help="Path to detection sets")
+    args = parser.parse_args()
 
-gt_path = "/raid/didir/Repository/yolo3d-lightning/data/KITTI/label_2"
-gt_split_file = "/raid/didir/Repository/yolo3d-lightning/data/KITTI/val_dummy.txt"
-
-val_image_ids = _read_imageset_file(gt_split_file)
-gt_annos = kitti.get_label_annos(gt_path, val_image_ids)
-
-print(get_official_eval_result(gt_annos, dt_annos, 0)) # 6s in my computer
-print(get_coco_eval_result(gt_annos, dt_annos, 0)) # 18s in my computer
+    # evaluate
+    evaluate(args.dt_path, args.gt_path, args.dt_sets)

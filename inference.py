@@ -111,7 +111,7 @@ def inference(config: DictConfig):
                 # save txt results
                 results_txt = {
                     "type": det["label"].split(" ")[0].capitalize(),
-                    "truncated": -1.00,
+                    "truncated": "-1.00", # set default to -1.00
                     "occluded": -1,
                     "alpha": alpha,
                     "bbox": " ".join(str(x) for x in box),

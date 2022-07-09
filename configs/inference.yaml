@@ -28,7 +28,7 @@ calib_file: ${root}/data/global_calib.txt
 save_det2d: False
 
 # show and save result
-save_result: True
+save_result: False
 
 # save result in txt
 save_txt: True
