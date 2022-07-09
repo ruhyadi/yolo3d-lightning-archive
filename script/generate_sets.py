@@ -1,9 +1,8 @@
 """Create training and validation sets"""
 
-import argparse
 from glob import glob
 import os
-
+import argparse
 
 def generate_sets(
     images_path: str, dump_dir: str, postfix: str = "", train_size: float = 0.8
