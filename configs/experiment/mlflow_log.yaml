@@ -9,7 +9,7 @@ defaults:
   - override /callbacks: default.yaml
   - override /logger: mlflow.yaml
   - override /trainer: default.yaml
-  - override /log_dir: default.yaml
+
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
