@@ -41,8 +41,5 @@ hydra:
       n_startup_trials: 10 # number of random sampling runs before optimization starts
 
     # define range of hyperparameters
-    search_space:
-      model.lr:
-        type: float
-        low: 0.00001
-        high: 0.001
+    params:
+      model.lr: interval(0.0001, 0.1)

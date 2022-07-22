@@ -169,3 +169,5 @@ script/kitti-object-eval-python2
 script/kitti_eval_c
 
 /PRIVATE
+/mmpose
+/OLD
